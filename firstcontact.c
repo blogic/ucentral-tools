@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <getopt.h>
 
@@ -16,9 +17,11 @@ int main(int argc, char **argv)
 	FILE *fp_dbg;
 	CURLcode res;
 	CURL *curl;
+	char *devid = NULL;
+	char *url;
 
 	while (1) {
-		int option = getopt(argc, argv, "k:c:o:h");
+		int option = getopt(argc, argv, "k:c:o:hi:");
 
 		if (option == -1)
 			break;
@@ -33,14 +36,23 @@ int main(int argc, char **argv)
 		case 'o':
 			file_json = optarg;
 			break;
+		case 'i':
+			devid = optarg;
+			break;
 		default:
 		case 'h':
 			printf("Usage: firstcontact OPTIONS\n"
 			       "  -k <keyfile>\n"
 			       "  -c <certfile>\n"
-			       "  -o <outfile>\n");
+			       "  -o <outfile>\n"
+			       "  -i <devid>\n");
 			return -1;
 		}
+	}
+
+	if (!devid) {
+		fprintf(stderr, "missing devid\n");
+		return -1;
 	}
 
 	ulog_open(ULOG_SYSLOG | ULOG_STDIO, LOG_DAEMON, "firstcontact");
@@ -60,7 +72,12 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	curl_easy_setopt(curl, CURLOPT_URL, "https://clientauth.demo.one.digicert.com/iot/api/v2/device/53c309a9-66a4-4f5b-b809-e72d888e6492");
+	if (asprintf(&url, "https://clientauth.demo.one.digicert.com/iot/api/v2/device/%s", devid) < 0) {
+		ULOG_ERR("failed to assemble url\n");
+		return -1;
+	}
+
+	curl_easy_setopt(curl, CURLOPT_URL, url);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp_json);
 	curl_easy_setopt(curl, CURLOPT_HEADERDATA, fp_dbg);
 	curl_easy_setopt(curl, CURLOPT_SSLCERTTYPE, "PEM");
