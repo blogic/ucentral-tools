@@ -1,4 +1,3 @@
-//#include <config.h>
 #include <stdio.h>
 #include <string.h>
 #include <radcli/radcli.h>
@@ -14,13 +13,13 @@ main(int argc, char **argv)
 	rc_handle *rh;
 
 	/* Not needed if you already used openlog() */
-	rc_openlog("my-prog-name");
+	rc_openlog("radiusprobe");
 
-	if ((rh = rc_read_config("radiusclient.conf")) == NULL)
+	if ((rh = rc_read_config("/tmp/radius.conf")) == NULL)
 		return ERROR_RC;
 
-	strcpy(username, "john");
-	strcpy(passwd, "SuperGeheim");
+	strcpy(username, "healthcheck");
+	strcpy(passwd, "uCentral");
 
 	send = NULL;
 
@@ -36,21 +35,12 @@ main(int argc, char **argv)
 
 	result = rc_auth(rh, 0, send, &received, NULL);
 
-	if (result == OK_RC) {
-		VALUE_PAIR *vp = received;
-		char name[128];
-		char value[128];
-
-		fprintf(stderr, "\"%s\" RADIUS Authentication OK\n", username);
-
-		while(vp != NULL) {
-			if (rc_avpair_tostr(rh, vp, name, sizeof(name), value, sizeof(value)) == 0) {
-				fprintf(stderr, "%s:\t%s\n", name, value);
-			}
-			vp = vp->next;
-		}
+	if (result == OK_RC || result == REJECT_RC) {
+		fprintf(stderr, "RADIUS server OK\n");
+		result = 0;
 	} else {
-		fprintf(stderr, "\"%s\" RADIUS Authentication failure (RC=%i)\n", username, result);
+		fprintf(stderr, "RADIUS server failure\n");
+		result = -1;
 	}
 
 	return result;
