@@ -12,14 +12,17 @@ main(int argc, char **argv)
 	uint32_t service;
 	rc_handle *rh;
 
+	if (argc != 3)
+		return -1;
+
 	/* Not needed if you already used openlog() */
 	rc_openlog("radiusprobe");
 
 	if ((rh = rc_read_config("/tmp/radius.conf")) == NULL)
 		return ERROR_RC;
 
-	strcpy(username, "healthcheck");
-	strcpy(passwd, "uCentral");
+	strcpy(username, argv[1]);
+	strcpy(passwd, argv[2]);
 
 	send = NULL;
 
